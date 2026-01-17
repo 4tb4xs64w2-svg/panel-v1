@@ -1,22 +1,22 @@
--- Hitbox Expander - PANEL CONTROLLED VERSION
+-- Hitbox Expander - PANEL CONTROLLED VERSION (NO GUI)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- =========================
--- GLOBAL FLAG (PANEL)
+-- GLOBAL FLAGS (PANEL)
 -- =========================
 _G.HitboxEnabled = _G.HitboxEnabled or false
+_G.HitboxTeamCheck = _G.HitboxTeamCheck or false
+_G.HitboxSize = _G.HitboxSize or 10000000000
 
 -- =========================
--- CONFIG
+-- STORAGE
 -- =========================
-local HITBOX_SIZE = 5000 -- multiplicador
-local UPDATE_INTERVAL = 0.05
-
 local originalSizes = {}
 local lastUpdate = 0
+local UPDATE_INTERVAL = 0.1
 
 -- =========================
 -- UTILS
@@ -27,42 +27,42 @@ local function IsAlive(char)
         and char.Humanoid.Health > 0
 end
 
-local function getParts(character)
-    return {
-        character:FindFirstChild("Head"),
-        character:FindFirstChild("HumanoidRootPart"),
-        character:FindFirstChild("Torso"),
-        character:FindFirstChild("UpperTorso"),
-        character:FindFirstChild("LowerTorso"),
-    }
+local function shouldApply(player)
+    if player == LocalPlayer then return false end
+    if not player.Character then return false end
+    if not IsAlive(player.Character) then return false end
+    if _G.HitboxTeamCheck and player.Team == LocalPlayer.Team then
+        return false
+    end
+    return true
 end
 
 -- =========================
--- APPLY / RESTORE HITBOX
+-- APPLY / RESTORE
 -- =========================
-local function applyHitbox(character)
-    if not character or character == LocalPlayer.Character then return end
+local function applyHitbox(player)
+    if not shouldApply(player) then return end
 
-    for _, part in pairs(getParts(character)) do
-        if part and part:IsA("BasePart") then
+    for _, part in pairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") then
             if not originalSizes[part] then
                 originalSizes[part] = part.Size
             end
-            part.Size = originalSizes[part] * HITBOX_SIZE
+            part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+            part.Transparency = 1
             part.CanCollide = false
-            part.Transparency = 0.5
         end
     end
 end
 
-local function restoreHitbox(character)
-    if not character then return end
+local function restoreHitbox(player)
+    if not player.Character then return end
 
-    for _, part in pairs(getParts(character)) do
-        if part and originalSizes[part] then
+    for _, part in pairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") and originalSizes[part] then
             part.Size = originalSizes[part]
-            part.CanCollide = true
             part.Transparency = 0
+            part.CanCollide = true
         end
     end
 end
@@ -71,10 +71,10 @@ end
 -- PLAYER EVENTS
 -- =========================
 Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
+    player.CharacterAdded:Connect(function()
         task.wait(0.5)
         if _G.HitboxEnabled then
-            applyHitbox(character)
+            applyHitbox(player)
         end
     end)
 end)
@@ -87,13 +87,11 @@ RunService.RenderStepped:Connect(function()
     if now - lastUpdate < UPDATE_INTERVAL then return end
     lastUpdate = now
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and IsAlive(player.Character) then
-            if _G.HitboxEnabled then
-                applyHitbox(player.Character)
-            else
-                restoreHitbox(player.Character)
-            end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if _G.HitboxEnabled then
+            applyHitbox(player)
+        else
+            restoreHitbox(player)
         end
     end
 end)
@@ -101,11 +99,8 @@ end)
 -- =========================
 -- INITIAL CLEANUP
 -- =========================
--- por si el script se carga con el botón apagado
-for _, player in pairs(Players:GetPlayers()) do
-    if player.Character then
-        restoreHitbox(player.Character)
-    end
+for _, player in ipairs(Players:GetPlayers()) do
+    restoreHitbox(player)
 end
 
-print("Hitbox listo (controlado por panel)")
+print("Hitbox Expander listo (controlado por panel)")
