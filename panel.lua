@@ -120,6 +120,12 @@ end)
 
 CreateButton("ESP Player", 140, function()
     _G.ESPEnabled = not _G.ESPEnabled
+        if _G.ESPEnabled then
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/4tb4xs64w2-svg/panel-v1/refs/heads/main/scripts/ESPPlayer.lua"
+    ))()
+end
+
     print("ESP Player:", _G.ESPEnabled)
     return _G.ESPEnabled
 end)
