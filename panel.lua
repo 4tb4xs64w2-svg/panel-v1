@@ -41,7 +41,7 @@ Title.Text = "🔥 Skibidi Hub"
 Title.TextColor3 = Color3.fromRGB(0, 255, 170)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 22
-Title.TextXAlignment = Left
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
 --// Minimize Button
 local Minimize = Instance.new("TextButton")
