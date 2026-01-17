@@ -1,4 +1,4 @@
---// SIMPLE MASTER HUB (FUNCIONAL)
+--// SIMPLE MASTER HUB + MINIMIZE
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -31,16 +31,36 @@ TopBar.BackgroundTransparency = 1
 TopBar.Active = true
 
 local Title = Instance.new("TextLabel", TopBar)
-Title.Size = UDim2.new(1, 0, 1, 0)
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.fromOffset(10, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "🔥 Master Hub"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
 Title.TextColor3 = Color3.fromRGB(0,255,170)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Minimize Button
+local Minimize = Instance.new("TextButton", TopBar)
+Minimize.Size = UDim2.fromOffset(30, 30)
+Minimize.Position = UDim2.new(1, -35, 0, 5)
+Minimize.Text = "-"
+Minimize.Font = Enum.Font.GothamBold
+Minimize.TextSize = 22
+Minimize.TextColor3 = Color3.new(1,1,1)
+Minimize.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Minimize.BorderSizePixel = 0
+Instance.new("UICorner", Minimize).CornerRadius = UDim.new(1,0)
+
+-- Content
+local Content = Instance.new("Frame", Main)
+Content.Position = UDim2.fromOffset(0, 40)
+Content.Size = UDim2.new(1, 0, 1, -40)
+Content.BackgroundTransparency = 1
 
 -- Button
-local Button = Instance.new("TextButton", Main)
-Button.Position = UDim2.fromOffset(40, 70)
+local Button = Instance.new("TextButton", Content)
+Button.Position = UDim2.fromOffset(40, 40)
 Button.Size = UDim2.fromOffset(220, 60)
 Button.Text = "ENABLE ALL"
 Button.Font = Enum.Font.GothamBold
@@ -78,7 +98,7 @@ UserInputService.InputEnded:Connect(function(i)
     end
 end)
 
--- STATE
+-- ENABLE / DISABLE
 local enabled = false
 local loaded = false
 
@@ -107,4 +127,12 @@ Button.MouseButton1Click:Connect(function()
 
     Button.Text = enabled and "DISABLE ALL" or "ENABLE ALL"
     Button.BackgroundColor3 = enabled and Color3.fromRGB(0,170,120) or Color3.fromRGB(30,30,30)
+end)
+
+-- MINIMIZE
+local minimized = false
+Minimize.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    Content.Visible = not minimized
+    Main.Size = minimized and UDim2.fromOffset(300, 40) or UDim2.fromOffset(300, 180)
 end)
