@@ -1,9 +1,4 @@
--- Fast Attack - GitHub Ready
-
-if getgenv().rz_FastAttackLoaded then
-    return
-end
-getgenv().rz_FastAttackLoaded = true
+-- Fast Attack - PANEL CONTROLLED VERSION
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +10,14 @@ if not Player.Character then
     Player.CharacterAdded:Wait()
 end
 
+-- =========================
+-- GLOBAL FLAG (PANEL)
+-- =========================
+_G.FastAttackEnabled = _G.FastAttackEnabled or false
+
+-- =========================
+-- SAFE WAIT
+-- =========================
 local function SafeWaitForChild(parent, name, timeout)
     timeout = timeout or 10
     local ok, res = pcall(function()
@@ -23,6 +26,9 @@ local function SafeWaitForChild(parent, name, timeout)
     if ok then return res end
 end
 
+-- =========================
+-- REMOTES
+-- =========================
 local Remotes = SafeWaitForChild(ReplicatedStorage, "Remotes")
 local Modules = SafeWaitForChild(ReplicatedStorage, "Modules")
 local Net = Modules and SafeWaitForChild(Modules, "Net")
@@ -41,37 +47,38 @@ if not RegisterAttack or not RegisterHit then
     return
 end
 
+-- =========================
+-- SETTINGS
+-- =========================
+local Settings = {
+    ClickDelay = 0.08,
+    Distance = 100000
+}
+
 local Enemies = workspace:FindFirstChild("Enemies")
 local Characters = workspace:FindFirstChild("Characters")
 
-local Settings = {
-    AutoClick = true,
-    ClickDelay = 0.08,
-}
-
-local FastAttack = {
-    Distance = 100000,
-    attackMobs = true,
-    attackPlayers = false,
-}
-
+-- =========================
+-- UTILS
+-- =========================
 local function IsAlive(char)
     return char
         and char:FindFirstChild("Humanoid")
         and char.Humanoid.Health > 0
 end
 
-local function Process(folder, list)
+local function CollectTargets(folder, list)
     if not folder then return end
     for _, m in pairs(folder:GetChildren()) do
         if m:IsA("Model") and IsAlive(m) then
-            local part = m:FindFirstChild("Head")
+            local part =
+                m:FindFirstChild("Head")
                 or m:FindFirstChild("HumanoidRootPart")
                 or m:FindFirstChild("Torso")
 
             if part and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                 local dist = (Player.Character.HumanoidRootPart.Position - part.Position).Magnitude
-                if dist < FastAttack.Distance then
+                if dist <= Settings.Distance then
                     table.insert(list, { m, part })
                 end
             end
@@ -79,16 +86,19 @@ local function Process(folder, list)
     end
 end
 
+-- =========================
+-- MAIN LOOP (OBEDECE PANEL)
+-- =========================
 RunService.Heartbeat:Connect(function()
-    if not Settings.AutoClick then return end
+    if not _G.FastAttackEnabled then return end
     if not IsAlive(Player.Character) then return end
 
     local tool = Player.Character:FindFirstChildOfClass("Tool")
     if not tool or tool.ToolTip == "Gun" then return end
 
     local targets = {}
-    Process(Enemies, targets)
-    Process(Characters, targets)
+    CollectTargets(Enemies, targets)
+    CollectTargets(Characters, targets)
 
     if #targets > 0 then
         pcall(function()
@@ -98,4 +108,4 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-print("Fast Attack cargado correctamente")
+print("Fast Attack listo (controlado por panel)")
