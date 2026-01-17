@@ -108,6 +108,12 @@ end)
 
 CreateButton("Hitbox", 80, function()
     _G.HitboxEnabled = not _G.HitboxEnabled
+        if _G.HitboxEnabled then
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/4tb4xs64w2-svg/panel-v1/refs/heads/main/scripts/hitbox.lua"
+    ))()
+end
+        
     print("Hitbox:", _G.HitboxEnabled)
     return _G.HitboxEnabled
 end)
