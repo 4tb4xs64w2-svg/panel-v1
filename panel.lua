@@ -97,6 +97,11 @@ end
 --// Buttons
 CreateButton("Fast Attack", 20, function()
     _G.FastAttackEnabled = not _G.FastAttackEnabled
+        if _G.FastAttackEnabled then
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/4tb4xs64w2-svg/panel-v1/refs/heads/main/scripts/fastattack.lua"
+        ))()
+    end
     print("Fast Attack:", _G.FastAttackEnabled)
     return _G.FastAttackEnabled
 end)
