@@ -1,106 +1,60 @@
--- Hitbox Expander - PANEL CONTROLLED VERSION (NO GUI)
-
+-- HITBOX REAL MÁS GRANDE POSIBLE 2025 (30 partes = ~8000+ studs reales)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local hitboxSize = 2048  -- ← Esto es lo máximo que Roblox permite de verdad
+local extras = 30        -- ← 30 partes extra = supera cualquier "5000" falso
+local teamCheck = false
+local visible = false
 
--- =========================
--- GLOBAL FLAGS (PANEL)
--- =========================
-_G.HitboxEnabled = _G.HitboxEnabled or false
-_G.HitboxTeamCheck = _G.HitboxTeamCheck or false
-_G.HitboxSize = _G.HitboxSize or 10000000000
-
--- =========================
--- STORAGE
--- =========================
-local originalSizes = {}
-local lastUpdate = 0
-local UPDATE_INTERVAL = 0.1
-
--- =========================
--- UTILS
--- =========================
-local function IsAlive(char)
-    return char
-        and char:FindFirstChildOfClass("Humanoid")
-        and char.Humanoid.Health > 0
-end
-
-local function shouldApply(player)
-    if player == LocalPlayer then return false end
-    if not player.Character then return false end
-    if not IsAlive(player.Character) then return false end
-    if _G.HitboxTeamCheck and player.Team == LocalPlayer.Team then
-        return false
+local function addExtras(model)
+    if model:FindFirstChild("InfiniteParts") then return end
+    local folder = Instance.new("Folder", model)
+    folder.Name = "InfiniteParts"
+    for i = 1, extras do
+        local p = Instance.new("Part", folder)
+        p.Name = "InfPart"..i
+        p.Size = Vector3.new(2048,2048,2048)
+        p.Transparency = 1
+        p.CanCollide = false
+        p.Anchored = false
+        p.CFrame = model.HumanoidRootPart.CFrame * CFrame.new(
+            math.random(-3000,3000), math.random(-3000,3000), math.random(-3000,3000)
+        )
+        local weld = Instance.new("WeldConstraint", p)
+        weld.Part0 = model.HumanoidRootPart
+        weld.Part1 = p
     end
-    return true
 end
 
--- =========================
--- APPLY / RESTORE
--- =========================
-local function applyHitbox(player)
-    if not shouldApply(player) then return end
+local function expand(model, enemy)
+    if not model:FindFirstChildOfClass("Humanoid") or model:FindFirstChildOfClass("Humanoid").Health <= 0 then return end
+    if not model:FindFirstChild("HumanoidRootPart") then return end
+    
+    for _, v in pairs(model:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.Size = Vector3.new(2048,2048,2048)
+            v.Transparency = visible and 0.7 or 1
+            v.CanCollide = false
+        end
+    end
+    addExtras(model)  -- ← ESTO ES LO QUE REALMENTE SUPERA los 2048
+end
 
-    for _, part in pairs(player.Character:GetChildren()) do
-        if part:IsA("BasePart") then
-            if not originalSizes[part] then
-                originalSizes[part] = part.Size
+local function loop()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and (not teamCheck or plr.Team ~= LocalPlayer.Team) then
+            expand(plr.Character, true)
+        end
+    end
+    for _, folder in pairs({"Enemies","Boss","Raid","SeaBeast","SeaEvents"}) do
+        local f = workspace:FindFirstChild(folder)
+        if f then
+            for _, v in pairs(f:GetChildren()) do
+                if v:IsA("Model") then expand(v, true) end
             end
-            part.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-            part.Transparency = 1
-            part.CanCollide = false
         end
     end
 end
 
-local function restoreHitbox(player)
-    if not player.Character then return end
-
-    for _, part in pairs(player.Character:GetChildren()) do
-        if part:IsA("BasePart") and originalSizes[part] then
-            part.Size = originalSizes[part]
-            part.Transparency = 0
-            part.CanCollide = true
-        end
-    end
-end
-
--- =========================
--- PLAYER EVENTS
--- =========================
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if _G.HitboxEnabled then
-            applyHitbox(player)
-        end
-    end)
-end)
-
--- =========================
--- MAIN LOOP (OBEDECE PANEL)
--- =========================
-RunService.RenderStepped:Connect(function()
-    local now = tick()
-    if now - lastUpdate < UPDATE_INTERVAL then return end
-    lastUpdate = now
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if _G.HitboxEnabled then
-            applyHitbox(player)
-        else
-            restoreHitbox(player)
-        end
-    end
-end)
-
--- =========================
--- INITIAL CLEANUP
--- =========================
-for _, player in ipairs(Players:GetPlayers()) do
-    restoreHitbox(player)
-end
-
-print("Hitbox Expander listo (controlado por panel)")
+RunService.Heartbeat:Connect(loop)
