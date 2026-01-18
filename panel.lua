@@ -1,4 +1,4 @@
---// SIMPLE MASTER HUB + MINIMIZE
+--// SIMPLE MASTER HUB + MINIMIZE (FIXED DRAG)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -20,11 +20,11 @@ Main.Parent = ScreenGui
 Main.Size = UDim2.fromOffset(300, 180)
 Main.Position = UDim2.fromScale(0.4, 0.35)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Main.Active = true
 Main.BorderSizePixel = 0
+Main.Active = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
--- TopBar
+-- TopBar (DRAG ZONE)
 local TopBar = Instance.new("Frame", Main)
 TopBar.Size = UDim2.new(1, 0, 0, 40)
 TopBar.BackgroundTransparency = 1
@@ -50,6 +50,7 @@ Minimize.TextSize = 22
 Minimize.TextColor3 = Color3.new(1,1,1)
 Minimize.BackgroundColor3 = Color3.fromRGB(35,35,35)
 Minimize.BorderSizePixel = 0
+Minimize.AutoButtonColor = true
 Instance.new("UICorner", Minimize).CornerRadius = UDim.new(1,0)
 
 -- Content
@@ -70,35 +71,53 @@ Button.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Button.BorderSizePixel = 0
 Instance.new("UICorner", Button).CornerRadius = UDim.new(0,10)
 
--- DRAG
-local dragging, dragStart, startPos
-TopBar.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+-- =======================
+-- DRAG SYSTEM (FIXED)
+-- =======================
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    Main.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
-        dragStart = i.Position
+        dragStart = input.Position
         startPos = Main.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
-UserInputService.InputChanged:Connect(function(i)
-    if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = i.Position - dragStart
-        Main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
     end
 end)
 
-UserInputService.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
     end
 end)
 
+-- =======================
 -- ENABLE / DISABLE
+-- =======================
 local enabled = false
 local loaded = false
 
@@ -129,7 +148,9 @@ Button.MouseButton1Click:Connect(function()
     Button.BackgroundColor3 = enabled and Color3.fromRGB(0,170,120) or Color3.fromRGB(30,30,30)
 end)
 
--- MINIMIZE
+-- =======================
+-- MINIMIZE (SAFE)
+-- =======================
 local minimized = false
 Minimize.MouseButton1Click:Connect(function()
     minimized = not minimized
