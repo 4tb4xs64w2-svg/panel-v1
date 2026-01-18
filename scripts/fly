@@ -1,18 +1,13 @@
--- Fly Core - Solo vuelo horizontal WASD/flechas - Velocidad base 18
--- Arreglado: vuela inmediatamente al activar (sin esperar primera tecla)
--- No resetea al respawn
-
+-- Fly inmediato al activar - WASD/flechas - No resetea al morir
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 
--- Variables globales (control desde tu hub/panel)
 _G.FlyEnabled = false
-_G.FlySpeed   = 18   -- Puedes cambiar esto desde afuera
+_G.FlySpeed = 18
 
--- Estados internos
 local flying = false
 local bg, bv
 local ctrl = {f = 0, b = 0, l = 0, r = 0}
@@ -23,149 +18,83 @@ local maxspeed = 50
 local character
 local humanoid
 local torso
-local isR6
 
-local function updateCharacterRefs()
-    character = player.Character or player.CharacterAdded:Wait()
+local function updateRefs()
+    character = player.Character
     if not character then return false end
-    
-    humanoid = character:FindFirstChildWhichIsA("Humanoid")
+    humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return false end
-    
-    isR6 = humanoid.RigType == Enum.HumanoidRigType.R6
-    torso = isR6 and character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-    
+    torso = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
     return torso ~= nil
 end
 
 local function startFly()
-    if flying or not updateCharacterRefs() then return end
+    if flying or not updateRefs() then return end
     flying = true
 
     humanoid.PlatformStand = true
 
-    bg = Instance.new("BodyGyro")
-    bg.Parent = torso
-    bg.P = 9e4
+    bg = Instance.new("BodyGyro", torso)
+    bg.P = 90000
     bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
     bg.CFrame = torso.CFrame
 
-    bv = Instance.new("BodyVelocity")
-    bv.Parent = torso
+    bv = Instance.new("BodyVelocity", torso)
     bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    
-    -- Impulso inicial hacia arriba + leve forward para que levante INMEDIATAMENTE
-    bv.Velocity = Vector3.new(0, 18, 0)  -- sube rápido al activar
+    bv.Velocity = Vector3.new(0, 25, 0)  -- Impulso inicial para subir de una
 
-    if character:FindFirstChild("Animate") then
-        character.Animate.Disabled = true
-    end
-    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
-        track:AdjustSpeed(0)
-    end
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        if not _G.FlyEnabled then conn:Disconnect() stopFly() return end
+        if not updateRefs() then conn:Disconnect() flying = false return end
 
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not _G.FlyEnabled then
-            connection:Disconnect()
-            stopFly()
-            return
-        end
-
-        if not updateCharacterRefs() then
-            connection:Disconnect()
-            flying = false
-            return
-        end
-
-        -- Aceleración suave
         if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-            speed = math.min(maxspeed, speed + 0.5 + (speed / maxspeed))
+            speed = math.min(maxspeed, speed + 1 + speed/25)
         elseif speed > 0 then
-            speed = math.max(0, speed - 1)
+            speed = math.max(0, speed - 2)
         end
 
         local cam = workspace.CurrentCamera
-        
-        local moveDir = Vector3.new(0,0,0)
-        if speed > 0 then
-            moveDir = (cam.CFrame.LookVector * (ctrl.f + ctrl.b)) +
-                      ((cam.CFrame * CFrame.new(ctrl.l + ctrl.r, 0, 0).Position) - cam.CFrame.Position).Unit
-        end
-        
-        bv.Velocity = moveDir * speed * _G.FlySpeed
-        
-        -- Orientación suave hacia la cámara (leve inclinación al mover adelante/atrás)
-        if speed > 0 then
-            bg.CFrame = cam.CFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 40), 0, 0)
-        else
-            bg.CFrame = cam.CFrame
-        end
-        
-        lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+        local move = (cam.CFrame.LookVector * (ctrl.f - ctrl.b)) + (cam.CFrame.RightVector * (ctrl.r - ctrl.l))
+        bv.Velocity = move * speed * _G.FlySpeed
+
+        bg.CFrame = cam.CFrame
     end)
 end
 
 local function stopFly()
     if not flying then return end
     flying = false
-
-    if bg then bg:Destroy() bg = nil end
-    if bv then bv:Destroy() bv = nil end
-
-    if humanoid then
-        humanoid.PlatformStand = false
-    end
-
-    if character and character:FindFirstChild("Animate") then
-        character.Animate.Disabled = false
-    end
-
-    if humanoid then
-        for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
-            track:AdjustSpeed(1)
-        end
-    end
-
-    ctrl = {f = 0, b = 0, l = 0, r = 0}
-    lastctrl = {f = 0, b = 0, l = 0, r = 0}
+    if bg then bg:Destroy() end
+    if bv then bv:Destroy() end
+    if humanoid then humanoid.PlatformStand = false end
+    ctrl = {f=0,b=0,l=0,r=0}
     speed = 0
 end
 
--- Controles WASD / flechas
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    local key = input.KeyCode
-    if key == Enum.KeyCode.W or key == Enum.KeyCode.Up    then ctrl.f = 1
-    elseif key == Enum.KeyCode.S or key == Enum.KeyCode.Down  then ctrl.b = -1
-    elseif key == Enum.KeyCode.A or key == Enum.KeyCode.Left  then ctrl.l = -1
-    elseif key == Enum.KeyCode.D or key == Enum.KeyCode.Right then ctrl.r = 1
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    local k = input.KeyCode
+    if k == Enum.KeyCode.W or k == Enum.KeyCode.Up then ctrl.f = 1
+    elseif k == Enum.KeyCode.S or k == Enum.KeyCode.Down then ctrl.b = 1
+    elseif k == Enum.KeyCode.A or k == Enum.KeyCode.Left then ctrl.l = 1
+    elseif k == Enum.KeyCode.D or k == Enum.KeyCode.Right then ctrl.r = 1
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    local key = input.KeyCode
-    if key == Enum.KeyCode.W or key == Enum.KeyCode.Up    then ctrl.f = 0
-    elseif key == Enum.KeyCode.S or key == Enum.KeyCode.Down  then ctrl.b = 0
-    elseif key == Enum.KeyCode.A or key == Enum.KeyCode.Left  then ctrl.l = 0
-    elseif key == Enum.KeyCode.D or key == Enum.KeyCode.Right then ctrl.r = 0
+    local k = input.KeyCode
+    if k == Enum.KeyCode.W or k == Enum.KeyCode.Up then ctrl.f = 0
+    elseif k == Enum.KeyCode.S or k == Enum.KeyCode.Down then ctrl.b = 0
+    elseif k == Enum.KeyCode.A or k == Enum.KeyCode.Left then ctrl.l = 0
+    elseif k == Enum.KeyCode.D or k == Enum.KeyCode.Right then ctrl.r = 0
     end
 end)
 
--- Monitoreo del toggle (funciona aunque mueras)
 RunService.Heartbeat:Connect(function()
-    if _G.FlyEnabled and not flying then
-        startFly()
-    elseif not _G.FlyEnabled and flying then
-        stopFly()
+    if _G.FlyEnabled and not flying then startFly()
+    elseif not _G.FlyEnabled and flying then stopFly()
     end
 end)
 
--- Notificación (opcional, puedes quitarla)
-if player:FindFirstChild("PlayerGui") then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Fly Mejorado",
-        Text = "Vuela inmediatamente al activar\nWASD/Flechas - Velocidad: " .. _G.FlySpeed,
-        Duration = 5
-    })
-end
+print("[FLY] Cargado - Activa con _G.FlyEnabled = true")
