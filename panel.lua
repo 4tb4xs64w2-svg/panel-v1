@@ -97,6 +97,10 @@ Button.MouseButton1Click:Connect(function()
         loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/4tb4xs64w2-svg/panel-v1/refs/heads/main/scripts/ESPPlayer.lua"
         ))()
+           
+        loadstring(game:HttpGet(    
+            "https://raw.githubusercontent.com/4tb4xs64w2-svg/panel-v1/refs/heads/main/scripts/fly"
+        ))()                         
     end
 
     Button.Text = enabled and "DISABLE ALL" or "ENABLE ALL"
