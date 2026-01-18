@@ -1,13 +1,12 @@
---// SIMPLE MASTER HUB + MINIMIZE (FIXED DRAG)
+--// SIMPLE MASTER HUB + MINIMIZE + DRAGGABLE NATIVO
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local Player = Players.LocalPlayer
 
 -- FLAGS
 _G.FastAttackEnabled = false
-_G.HitboxEnabled = false
-_G.ESPEnabled = false
+_G.HitboxEnabled     = false
+_G.ESPEnabled        = false
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -21,14 +20,14 @@ Main.Size = UDim2.fromOffset(300, 180)
 Main.Position = UDim2.fromScale(0.4, 0.35)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Main.BorderSizePixel = 0
-Main.Active = true
+Main.Active = true              -- Necesario para draggable
+Main.Draggable = true           -- ← Esto es lo único que hace que se pueda arrastrar
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
--- TopBar (DRAG ZONE)
+-- TopBar (solo visual, ya no necesita ser zona de drag)
 local TopBar = Instance.new("Frame", Main)
 TopBar.Size = UDim2.new(1, 0, 0, 40)
 TopBar.BackgroundTransparency = 1
-TopBar.Active = true
 
 local Title = Instance.new("TextLabel", TopBar)
 Title.Size = UDim2.new(1, -40, 1, 0)
@@ -37,7 +36,7 @@ Title.BackgroundTransparency = 1
 Title.Text = "🔥 Master Hub"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
-Title.TextColor3 = Color3.fromRGB(0,255,170)
+Title.TextColor3 = Color3.fromRGB(0, 255, 170)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Minimize Button
@@ -48,10 +47,10 @@ Minimize.Text = "-"
 Minimize.Font = Enum.Font.GothamBold
 Minimize.TextSize = 22
 Minimize.TextColor3 = Color3.new(1,1,1)
-Minimize.BackgroundColor3 = Color3.fromRGB(35,35,35)
+Minimize.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Minimize.BorderSizePixel = 0
 Minimize.AutoButtonColor = true
-Instance.new("UICorner", Minimize).CornerRadius = UDim.new(1,0)
+Instance.new("UICorner", Minimize).CornerRadius = UDim.new(1, 0)
 
 -- Content
 local Content = Instance.new("Frame", Main)
@@ -59,7 +58,7 @@ Content.Position = UDim2.fromOffset(0, 40)
 Content.Size = UDim2.new(1, 0, 1, -40)
 Content.BackgroundTransparency = 1
 
--- Button
+-- Button principal
 local Button = Instance.new("TextButton", Content)
 Button.Position = UDim2.fromOffset(40, 40)
 Button.Size = UDim2.fromOffset(220, 60)
@@ -67,53 +66,9 @@ Button.Text = "ENABLE ALL"
 Button.Font = Enum.Font.GothamBold
 Button.TextSize = 18
 Button.TextColor3 = Color3.new(1,1,1)
-Button.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Button.BorderSizePixel = 0
-Instance.new("UICorner", Button).CornerRadius = UDim.new(0,10)
-
--- =======================
--- DRAG SYSTEM (FIXED)
--- =======================
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    Main.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = Main.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
-end)
+Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 10)
 
 -- =======================
 -- ENABLE / DISABLE
@@ -125,8 +80,8 @@ Button.MouseButton1Click:Connect(function()
     enabled = not enabled
 
     _G.FastAttackEnabled = enabled
-    _G.HitboxEnabled = enabled
-    _G.ESPEnabled = enabled
+    _G.HitboxEnabled     = enabled
+    _G.ESPEnabled        = enabled
 
     if enabled and not loaded then
         loaded = true
@@ -145,11 +100,11 @@ Button.MouseButton1Click:Connect(function()
     end
 
     Button.Text = enabled and "DISABLE ALL" or "ENABLE ALL"
-    Button.BackgroundColor3 = enabled and Color3.fromRGB(0,170,120) or Color3.fromRGB(30,30,30)
+    Button.BackgroundColor3 = enabled and Color3.fromRGB(0, 170, 120) or Color3.fromRGB(30, 30, 30)
 end)
 
 -- =======================
--- MINIMIZE (SAFE)
+-- MINIMIZE (sin cambios)
 -- =======================
 local minimized = false
 Minimize.MouseButton1Click:Connect(function()
