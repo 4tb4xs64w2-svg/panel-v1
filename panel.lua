@@ -7,7 +7,7 @@ _G.HitboxEnabled = false
 _G.ESPEnabled = false
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PrimitosHub"
+ScreenGui.Name = "RajaPetHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 local Main = Instance.new("Frame")
@@ -27,7 +27,7 @@ local Title = Instance.new("TextLabel", TopBar)
 Title.Size = UDim2.new(1, -40, 1, 0)
 Title.Position = UDim2.fromOffset(10, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🔥 Primitos Hub"
+Title.Text = "🔥 Raja Pet Hub"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
 Title.TextColor3 = Color3.fromRGB(0, 255, 170)
